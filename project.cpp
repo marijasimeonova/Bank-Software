@@ -6,12 +6,33 @@
 #include <vector>
 using namespace std;
 
-// hashed_password ?
-struct User
+
+class User
 {
+private:
     string username;
     string password;
-    int balance;
+    float balance;
+public:
+    User(string username, string password){
+        this->username = username;
+        this->password = password;
+        this->balance  = 0;
+    }
+    User(string username, string password, float balance){
+        this->username = username;
+        this->password = password;
+        this->balance  = balance;
+    }
+    string getUsername(){
+        return username;
+    }
+    string getPassword(){
+        return password;
+    }
+    float getBalance(){
+        return balance;
+    }
 };
 
 vector<User> loadUsersFromFile(string filename)
@@ -25,14 +46,13 @@ void saveUsersToFile(string filename, vector<User> users)
 void Login(vector<User> users, const string username, const string password)
 {
     // кара потребителят да въведе име, а след това и парола
-    cout << "LOG";
 }
 
 User Register(const string username, const string password)
 {
-    // кара потребителят да въведе свободно име, което съдържа само латински букви или символи  и парола, която трябва да се потвърди и да съдържа само латински букви,
-    // числа и символите !@#$%^&* като трябва да има поне 1 малка буква, 1 главна и 1 символ, а паролата трябва да е поне 5 символа.
-    // Паролата трябва да се съхранява в хеширан вид
+    string hashedPassword;
+    hashedPassword = hashPassword(password);
+    return User(username, hashedPassword);
 }
 
 bool validateUsername(string username)
@@ -45,6 +65,9 @@ bool validatePassword(string password)
 
 string hashPassword(string password)
 {
+    hash<string> str_hash;
+    size_t hashedPassword = str_hash(password);
+    return to_string(hashedPassword);
 }
 
 int main()
