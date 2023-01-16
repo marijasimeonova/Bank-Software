@@ -57,11 +57,6 @@ string hashPassword(string password)
 vector<User> loadUsersFromFile(string filename)
 {
     // to do implement loading from file
-    vector<User> temp;
-    temp.push_back(User("test1", hashPassword("test1")));
-    temp.push_back(User("test2", hashPassword("test2"), 40.21));
-    temp.push_back(User("test3", hashPassword("test3")));
-    return temp;
 }
 
 void saveUsersToFile(string filename, vector<User> &users)
@@ -209,15 +204,60 @@ User Register(const string username, const string password)
     return User(username, hashedPassword);
 }
 
-bool validateUsername(string username)
+bool validateUsername(const string &username, vector<User> &users)
 {
-    // to do implement logic
+    if (username.empty())
+    {
+        return false;
+    }
+    size_t found = username.find_first_not_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$%^&*");
+    if (found != string::npos)
+    {
+        return false;
+    }
+    for (auto &user : users) // that username is already used
+    {
+        if (user.getUsername() == username)
+        {
+            return false;
+        }
+    }
+
     return true;
 }
 
-bool validatePassword(string password)
+bool validatePassword(const string &password)
 {
-    // to do implement logic
+    if (password.empty() || password.size() < 5)
+    {
+        return false;
+    }
+    size_t found = password.find_first_not_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*");
+    if (found != string::npos)
+    {
+        return false;
+    }
+    int hasUpper = 0, hasLower = 0, hasSymbol = 0;
+    for (auto &character : password)
+    {
+        if (isupper(character))
+        {
+            hasUpper++;
+        }
+        else if (islower(character))
+        {
+            hasLower++;
+        }
+        else if (character == '!' || character == '@' || character == '#' || character == '%' || character == '^' || character == '&' || character == '*')
+        {
+            hasSymbol++;
+        }
+    }
+    if (hasUpper < 1 || hasLower < 1 || hasSymbol < 1)
+    {
+        return false;
+    }
+
     return true;
 }
 
@@ -248,12 +288,12 @@ int main()
             cin >> username;
             cout << "Enter password: ";
             cin >> password;
-            if (validateUsername(username) && validatePassword(password))
+            if (validateUsername(username, users) && validatePassword(password))
             {
                 User user = Register(username, password);
                 users.push_back(user);
                 cout << "Successfully registered user" << endl;
-                bankMenu(users, user);
+                bankMenu(users, users.back());
             }
             else
             {
