@@ -1,7 +1,6 @@
-// title
-
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include <string>
 #include <vector>
 #include <cmath>
@@ -25,7 +24,8 @@ public:
     {
         this->username = username;
         this->password = password;
-        balance = round(balance * 100) / 100; // round to 2 decimal places
+        // round to 2 decimal places
+        balance = round(balance * 100) / 100;
         this->balance = balance;
     }
     string getUsername()
@@ -42,6 +42,7 @@ public:
     }
     void setBalance(double balance)
     {
+        // round to 2 decimal places
         balance = round(balance * 100) / 100;
         this->balance = balance;
     }
@@ -49,6 +50,7 @@ public:
 
 string hashPassword(string password)
 {
+    // hash user's password
     hash<string> str_hash;
     size_t hashedPassword = str_hash(password);
     return to_string(hashedPassword);
@@ -56,12 +58,65 @@ string hashPassword(string password)
 
 vector<User> loadUsersFromFile(string filename)
 {
-    // to do implement loading from file
+    ifstream file;
+    file.open("users.txt");
+    vector<User> users;
+    if (file.is_open())
+    {
+        // read a complete line and store it here
+        string line;
+        // read all lines of the file
+        while (getline(file, line))
+        {
+            // read a complete line into the string line
+            // put it into a istringstream to be able to extract it with iostream functions
+            istringstream iss(line);
+
+            // vector to store the substrings
+            string substring;
+            vector<string> substrings;
+
+            // get the substrings from the istringstream
+            while (getline(iss, substring, ':'))
+            {
+                // Add the substring to the vector
+                substrings.push_back(substring);
+            }
+            // insert user to file
+            User user(substrings[0], substrings[1], stoi(substrings[2]));
+            users.push_back(user);
+        }
+    }
+    else
+    {
+        cout << "Could not open file!" << endl;
+    }
+
+    return users;
 }
 
 void saveUsersToFile(string filename, vector<User> &users)
 {
-    // to do
+    // delete previous data
+    fstream file;
+    file.open(filename, ofstream::out | ofstream::trunc);
+    file.close();
+    // open the file to perform write operation using file object
+    file.open(filename, ios::out);
+    if (file.is_open())
+    {
+        // insert users
+        for (auto &user : users)
+        {
+            file << user.getUsername() << ':' << user.getPassword() << ':' << user.getBalance() << endl;
+        }
+
+        file.close();
+    }
+    else
+    {
+        cout << "Could not open file!" << endl;
+    }
 }
 
 void cancelAccount(vector<User> &users, User &user)
@@ -74,8 +129,10 @@ void cancelAccount(vector<User> &users, User &user)
     bool cancelAccount = false;
     for (vector<User>::iterator deleteUser = users.begin(); deleteUser != users.end(); ++deleteUser)
     {
+        // check if that user is existing and his balance is zero
         if (deleteUser->getUsername() == user.getUsername() && user.getPassword() == hashedPassword && user.getBalance() == 0)
         {
+            // cancel(delete) user's account
             deleteUser = users.erase(deleteUser);
             cancelAccount = true;
             break;
@@ -96,7 +153,7 @@ void deposit(User &user)
     double deposit;
     cout << "Enter the amount you want to deposit: ";
     cin >> deposit;
-    deposit = round(deposit * 100) / 100;
+    // add the wanted deposit to the user's balance
     user.setBalance(user.getBalance() + deposit);
 }
 
@@ -106,7 +163,6 @@ void transfer(vector<User> &users, User &user)
     string recipient;
     cout << "Enter the amount you want to transfer: ";
     cin >> transfer;
-    transfer = round(transfer * 100) / 100;
     cout << "Enter the recipient's username: ";
     cin >> recipient;
     double overdraft = -10000;
@@ -114,12 +170,15 @@ void transfer(vector<User> &users, User &user)
     bool existingUser = false;
     if (newBalance >= overdraft)
     {
-        for (auto &user2 : users)
+        for (auto &receivingUser : users)
         {
-            if (user2.getUsername() == recipient)
+            // check if there is existing user to recieve the money
+            if (receivingUser.getUsername() == recipient)
             {
                 existingUser = true;
-                user2.setBalance(user2.getBalance() + transfer);
+                // add the wanted transfer to the recieving user's balance
+                receivingUser.setBalance(receivingUser.getBalance() + transfer);
+                // subtract the wanted transfer from current user
                 user.setBalance(newBalance);
             }
         }
@@ -135,11 +194,11 @@ void withdraw(User &user)
     double withdraw;
     cout << "Enter the amount you want to withdraw: ";
     cin >> withdraw;
-    withdraw = round(withdraw * 100) / 100;
     double overdraft = -10000;
     double newBalance = user.getBalance() - withdraw;
     if (newBalance >= overdraft)
     {
+        // subtract the wanted withdraw from the user's balance
         user.setBalance(newBalance);
     }
     else
@@ -187,13 +246,21 @@ void Login(vector<User> &users, const string username, const string password)
 {
     string hashedPassword;
     hashedPassword = hashPassword(password);
+    bool existingUser = false;
     for (auto &user : users)
     {
+        // check if that user is existing
         if (user.getUsername() == username && user.getPassword() == hashedPassword)
         {
+            // take user to bankMenu
+            existingUser = true;
             bankMenu(users, user);
             break;
         }
+    }
+    if (!existingUser)
+    {
+        cout << "No user found!" << endl;
     }
 }
 
@@ -201,6 +268,7 @@ User Register(const string username, const string password)
 {
     string hashedPassword;
     hashedPassword = hashPassword(password);
+    // create new user
     return User(username, hashedPassword);
 }
 
@@ -210,12 +278,14 @@ bool validateUsername(const string &username, vector<User> &users)
     {
         return false;
     }
-    size_t found = username.find_first_not_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$%^&*");
+    // check if the username contains only latin letters or symbols
+    size_t found = username.find_first_not_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$%^&*-_.,");
     if (found != string::npos)
     {
         return false;
     }
-    for (auto &user : users) // that username is already used
+    // check if that username is already used
+    for (auto &user : users)
     {
         if (user.getUsername() == username)
         {
@@ -228,15 +298,18 @@ bool validateUsername(const string &username, vector<User> &users)
 
 bool validatePassword(const string &password)
 {
+    // check if password consists at least 5 characters
     if (password.empty() || password.size() < 5)
     {
         return false;
     }
+    // check if the password contains only latin letters, numbers or specific symbols
     size_t found = password.find_first_not_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*");
     if (found != string::npos)
     {
         return false;
     }
+    // check if the password contains at least one upper letter, lower letter and symbol
     int hasUpper = 0, hasLower = 0, hasSymbol = 0;
     for (auto &character : password)
     {
@@ -265,8 +338,8 @@ int main()
 {
     char command = ' ';
     string username, password, filename = "users.txt";
+    // load user profiles from "users.txt" and store them in the vector users
     vector<User> users = loadUsersFromFile(filename);
-
     while (command != 'Q')
     {
         cout << "Enter a command: " << endl;
@@ -285,9 +358,10 @@ int main()
             break;
         case 'R':
             cout << "Enter username: ";
-            cin >> username;
+            cin.ignore();
+            getline(cin, username);
             cout << "Enter password: ";
-            cin >> password;
+            getline(cin, password);
             if (validateUsername(username, users) && validatePassword(password))
             {
                 User user = Register(username, password);
